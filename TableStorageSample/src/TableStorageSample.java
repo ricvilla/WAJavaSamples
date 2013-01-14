@@ -2,7 +2,10 @@ import java.net.URISyntaxException;
 import java.security.InvalidKeyException;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import com.microsoft.windowsazure.services.core.storage.*;
 import com.microsoft.windowsazure.services.table.client.*;
@@ -16,7 +19,7 @@ public class TableStorageSample {
 	public static void main(String[] args) {
 		createTable();
 		//insertEntity();
-		insertEntities();
+		//insertEntities();
 		retrieveTableEntities();
 	}
 	
@@ -133,13 +136,13 @@ public class TableStorageSample {
 			String partitionFilter = TableQuery.generateFilterCondition(
 			    TableConstants.PARTITION_KEY, 
 			    QueryComparisons.EQUAL,
-			    "Harp");
+			    "Smith");
 
 			// Create a filter condition where the row key is less than the letter "E".
 			String rowFilter = TableQuery.generateFilterCondition(
 			    TableConstants.ROW_KEY, 
 			    QueryComparisons.EQUAL,
-			    "Walter");
+			    "FirstName");
 
 			// Combine the two conditions into a filter expression.
 			String combinedFilter = TableQuery.combineFilters(partitionFilter, 
@@ -147,15 +150,30 @@ public class TableStorageSample {
 
 			// Specify a range query, using "Smith" as the partition key,
 			// with the row key being up to the letter "E".
+			//TableQuery<CustomerEntity> rangeQuery =
+			//    TableQuery.from("people", CustomerEntity.class)
+			//    .where(combinedFilter);
+			
 			TableQuery<CustomerEntity> rangeQuery =
-			    TableQuery.from("people", CustomerEntity.class)
-			    .where(combinedFilter);
+			    TableQuery.from("people", CustomerEntity.class);
+			
+			ArrayList<CustomerEntity> customerEntities = new ArrayList<CustomerEntity>();
 
 			// Loop through the results, displaying information about the entity
 			for (CustomerEntity entity : tableClient.execute(rangeQuery)) {
+				customerEntities.add(entity);
 			    System.out.println(entity.getPartitionKey() + " " + entity.getRowKey() + 
-			        "\t" + entity.getEmail() + "\t" + entity.getPhoneNumber());
+			        "\t" + entity.getEmail() + "\t" + entity.getPhoneNumber() + "\t" + entity.getBirthday().toString());
 			}
+			
+			//Sort returned collection
+			Collections.sort(customerEntities);
+			
+			for (CustomerEntity entity : customerEntities) {
+			    System.out.println(entity.getPartitionKey() + " " + entity.getRowKey() + 
+			        "\t" + entity.getEmail() + "\t" + entity.getPhoneNumber() + "\t" + entity.getBirthday().toString());
+			}
+			
 		} catch (InvalidKeyException | URISyntaxException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -163,7 +181,7 @@ public class TableStorageSample {
 		
 	}
 	
-	public static class CustomerEntity extends TableServiceEntity {
+	public static class CustomerEntity extends TableServiceEntity implements Comparable<CustomerEntity> {
 	    public CustomerEntity(String lastName, String firstName) {
 	        this.partitionKey = lastName;
 	        this.rowKey = firstName;
@@ -197,6 +215,10 @@ public class TableStorageSample {
 	    
 	    public void setBirthday(Date birthday){
 	    	this.birthday = birthday;
+	    }
+	    
+	    public int compareTo(CustomerEntity customerEntity) {
+	    	return birthday.compareTo(customerEntity.birthday);
 	    }
 	    
 	}
